@@ -15,7 +15,7 @@ INCLUDES      ?= inc
 TOOL          ?= $(shell dirname `which arm-none-eabi-gcc`)
 
 # Path to the root of your (Stellaris|Tiva)Ware folder
-TW_DIR        ?= $(HOME)/src/TivaWare
+TW_DIR        ?= $(HOME)/src/StellarisWare
 
 # Path to the root of yor RASLib folder
 RAS_DIR				?= $(HOME)/src/C/Rasware/RASLib
@@ -24,7 +24,7 @@ RAS_DIR				?= $(HOME)/src/C/Rasware/RASLib
 Part_Number   ?= LM4F120H5QR
 
 # Location of a linker script
-LD_SCRIPT     ?= tm4c.ld
+LD_SCRIPT     ?= lm4f.ld
 
 # FPU Type
 FPU           ?= softfp
@@ -91,23 +91,20 @@ CFLAGS     += -g3
 CFLAGS     += -ffunction-sections
 CFLAGS     += -fdata-sections
 CFLAGS     += -fsingle-precision-constant
-CFLAGS     += -I$(TW_DIR) -I$(INCLUDES)
+CFLAGS     += -I$(TW_DIR)/.. -I$(INCLUDES) -I$(RAS_DIR)/..
 CFLAGS     += -O3
 
-LIBS     += driver
+LIBS	   += ras
+LIBS     += driver-cm4f
 LIBS	   += m
 LIBS	   += c
 LIBS	   += gcc
-LIBS	   += ras
 
-LDFLAGS    += -g
-
-LDFLAGS	   += -L ${TW_DIR}/driverlib/gcc
+LDFLAGS	   += -L ${TW_DIR}/driverlib/gcc-cm4f
 LDFLAGS	   += -L ${RAS_DIR}/output
 
 LDFLAGS    += $(addprefix -L , $(shell ${CC} ${CFLAGS} -print-search-dirs | grep libraries | sed -e 's/libraries:\ =//' -e 's/:/ /g'))
 
-LDFLAGS    += --entry ResetISR
 LDFLAGS    += --gc-sections
 LDFLAGS    += -nostdlib
 # Flag Definitions
@@ -149,7 +146,7 @@ bin/%.o: src/%.c
 # Assember Command
 bin/%.o: src/%.as
 	${Debug}echo AS: $<
-	${Debug}$(AS) -c $(AFLAGS) -o $@ $< 
+	${Debug}$(AS) -c $(AFLAGS) -o $@ $<
 
 # Create Assembly
 bin/%.s: src/%.c
@@ -177,7 +174,7 @@ debug: bin/${TARGET}.out .gdb-script
 	${Debug}${GDB} $< -x .gdb-script ${GDBFLAGS}
 
 flash: debug
-flash: GDBFLAGS += -batch
+flash: GDBFLAGS += -ex "monitor reset run" -batch
 
 uart: flash
 	${Debug}${UART} /dev/lm4f 115200
